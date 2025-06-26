@@ -2,74 +2,822 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Farhan's C Algorithm Site</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Farhans Practice Problems with Monaco Editor</title>
+
+  <!-- Monaco Editor loader -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.42.0/min/vs/loader.min.js"></script>
+
   <style>
+    :root {
+      --green: #238636;
+      --green-light: #2ea043;
+      --bg: #0d1117;
+      --bg-alt: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --sidebar-width: 280px;
+      --transition-speed: 0.3s;
+      --scrollbar-bg: #1e1e1e;
+      --scrollbar-thumb: #02ff00;
+      --scrollbar-thumb-hover: #333;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
     body {
-      font-family: 'Roboto', sans-serif;
-      background: #f4f4f4;
       margin: 0;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    #container {
+      display: flex;
+      flex: 1 1 auto;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    /* Sidebar */
+    #sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-alt);
+      border-right: 3px solid var(--border);
+      padding: 15px 10px 15px 15px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-bg);
+      transition: width var(--transition-speed);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    #sidebar::-webkit-scrollbar {
+      width: 12px;
+      background-color: var(--scrollbar-bg);
+    }
+    #sidebar::-webkit-scrollbar-thumb {
+      background-color: var(--scrollbar-thumb);
+      border-radius: 6px;
+      border: 3px solid var(--scrollbar-bg);
+    }
+    #sidebar::-webkit-scrollbar-thumb:hover {
+      background-color: var(--scrollbar-thumb-hover);
+    }
+    #sidebar h2 {
+      color: var(--green);
+      border-bottom: 2px solid var(--green);
+      margin-bottom: 15px;
+      font-size: 1.25rem;
+      user-select: none;
+    }
+    #fileList {
+      list-style: none;
       padding: 0;
+      margin: 0;
+      flex-grow: 1;
+      overflow-y: scroll;
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) #161b22;
     }
-    header {
-      background-color: #1e88e5;
-      color: white;
-      padding: 20px;
-      text-align: center;
+    #fileList::-webkit-scrollbar {
+      width: 12px;
+      background-color: var(--scrollbar-bg);
     }
-    .container {
-      padding: 30px;
-      max-width: 800px;
-      margin: auto;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    #fileList::-webkit-scrollbar-thumb {
+      background-color: var(--scrollbar-thumb);
+      border-radius: 6px;
+      border: 3px solid var(--scrollbar-bg);
     }
-    h1 {
-      margin-top: 0;
+    #fileList::-webkit-scrollbar-thumb:hover {
+      background-color: var(--scrollbar-thumb-hover);
     }
-    .code-list {
-      margin-top: 20px;
-    }
-    .code-card {
-      background: #e3f2fd;
-      padding: 15px;
-      margin: 10px 0;
-      border-left: 5px solid #2196f3;
+    #fileList li {
+      background: #21262d;
+      padding: 8px 12px;
+      margin-bottom: 6px;
       border-radius: 5px;
+      cursor: pointer;
+      transition: background var(--transition-speed), color var(--transition-speed);
+      font-size: 0.9rem;
+      user-select: none;
+      overflow: hidden;
     }
-    .code-card a {
-      text-decoration: none;
-      color: #0d47a1;
+    #fileList li.active {
+      background: var(--green);
+      color: white;
+      font-weight: 600;
+    }
+    #fileList li:hover:not(.active) {
+      background: var(--green-light);
+      color: white;
+    }
+
+    /* Back button */
+    #fileList li.back-button {
+      font-weight: 700;
+      background-color: #0a4d1b;
+      color: #b2f2bb;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 0 6px 1px #238636aa;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    #fileList li.back-button:hover {
+      background-color: #169a2c;
+      color: white;
+      box-shadow: 0 0 12px 2px #2ea043cc;
+    }
+
+    /* Main content */
+    #main {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      padding: 15px 20px;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    #codeSection {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      flex: 1 1 auto;
+      min-height: 600px;
+      overflow: hidden;
+    }
+
+    #editorContainer {
+      flex: 2 1 60%;
+      min-width: 300px;
+      border: 3px solid var(--green);
+      border-radius: 6px;
+      max-height: 600px;
+      background: #282c34;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #ioSide {
+      flex: 1 1 35%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 250px;
+      max-height: 600px;
+      overflow: hidden;
+    }
+
+    .io-box {
+      display: flex;
+      flex-direction: column;
+      max-height: 33vh;
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-bg);
+    }
+    .io-box::-webkit-scrollbar {
+      width: 12px;
+      background-color: var(--scrollbar-bg);
+    }
+    .io-box::-webkit-scrollbar-thumb {
+      background-color: var(--scrollbar-thumb);
+      border-radius: 6px;
+      border: 3px solid var(--scrollbar-bg);
+    }
+    .io-box::-webkit-scrollbar-thumb:hover {
+      background-color: var(--scrollbar-thumb-hover);
+    }
+
+    .io-box label {
       font-weight: bold;
+      color: var(--green);
+      margin-bottom: 5px;
+      font-size: 0.95rem;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    textarea, .readonly-box {
+      width: 100%;
+      background-color: #21262d;
+      color: var(--text);
+      border: 2px solid var(--green);
+      border-radius: 5px;
+      padding: 10px;
+      resize: vertical;
+      font-family: monospace;
+      font-size: 14px;
+      min-height: 80px;
+      max-height: 150px;
+      overflow-y: scroll;
+      transition: border-color var(--transition-speed);
+      flex-grow: 1;
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-bg);
+    }
+    textarea::-webkit-scrollbar, .readonly-box::-webkit-scrollbar {
+      width: 12px;
+      background-color: var(--scrollbar-bg);
+    }
+    textarea::-webkit-scrollbar-thumb, .readonly-box::-webkit-scrollbar-thumb {
+      background-color: var(--scrollbar-thumb);
+      border-radius: 6px;
+      border: 3px solid var(--scrollbar-bg);
+    }
+    textarea::-webkit-scrollbar-thumb:hover, .readonly-box::-webkit-scrollbar-thumb:hover {
+      background-color: var(--scrollbar-thumb-hover);
+    }
+    textarea:focus {
+      outline: none;
+      border-color: var(--green-light);
+      background-color: #1c252b;
+    }
+    .readonly-box {
+      background-color: #1e1e1e;
+      white-space: pre-wrap;
+    }
+
+    #descriptionBox {
+      min-height: 190px;
+      max-height: 250px;
+      overflow-y: scroll;
+      flex-grow: 1;
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-bg);
+    }
+    #descriptionBox::-webkit-scrollbar {
+      width: 12px;
+      background-color: var(--scrollbar-bg);
+    }
+    #descriptionBox::-webkit-scrollbar-thumb {
+      background-color: var(--scrollbar-thumb);
+      border-radius: 6px;
+      border: 3px solid var(--scrollbar-bg);
+    }
+    #descriptionBox::-webkit-scrollbar-thumb:hover {
+      background-color: var(--scrollbar-thumb-hover);
+    }
+
+    #runBtn {
+      margin-top: 15px;
+      background: var(--green);
+      border: none;
+      padding: 14px 24px;
+      border-radius: 5px;
+      color: white;
+      font-weight: bold;
+      font-size: 17px;
+      cursor: pointer;
+      align-self: flex-start;
+      transition: background var(--transition-speed);
+      user-select: none;
+      min-width: 120px;
+    }
+    #runBtn:hover, #runBtn:focus {
+      background: var(--green-light);
+      outline: none;
+    }
+
+    #statusMsg {
+      margin-top: 10px;
+      font-style: italic;
+      color: #999;
+      min-height: 22px;
+      user-select: none;
+    }
+    #expectedOutput {
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      max-height: 140px;
+      overflow-y: scroll;
+      flex-grow: 1;
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) #1e1e1e;
+    }
+    #expectedOutput::-webkit-scrollbar {
+      width: 12px;
+      background-color: var(--scrollbar-bg);
+    }
+    #expectedOutput::-webkit-scrollbar-thumb {
+      background-color: var(--scrollbar-thumb);
+      border-radius: 6px;
+      border: 3px solid var(--scrollbar-bg);
+    }
+    #expectedOutput::-webkit-scrollbar-thumb:hover {
+      background-color: var(--scrollbar-thumb-hover);
+    }
+
+    #uploadedDate {
+      margin-top: 10px;
+      font-size: 0.9em;
+      color: #56d364;
+      text-align: right;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    #fileNameLabel {
+      color: #56d364;
+      font-weight: normal;
+      font-size: 0.9em;
+      margin-left: 8px;
+      user-select: none;
+    }
+
+    /* Typing animation footer */
+    #typingContainer {
+      height: 40px;
+      background: var(--bg-alt);
+      border-top: 3px solid var(--green);
+      color: var(--green);
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: bold;
+      font-size: 18px;
+      padding-left: 15px;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    #typingText {
+      border-right: 2px solid var(--green);
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1024px) {
+      #editorContainer {
+        max-height: 400px;
+      }
+      #ioSide {
+        max-height: 400px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        height: auto;
+      }
+      #container {
+        flex-direction: column;
+        height: auto;
+      }
+      #sidebar {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 3px solid var(--border);
+        padding: 10px 10px 10px 10px;
+        max-height: 240px;
+        overflow-y: scroll;
+      }
+      #sidebar h2 {
+        font-size: 1.1rem;
+      }
+      #fileList li {
+        font-size: 0.85rem;
+        padding: 8px 10px;
+      }
+      #main {
+        padding: 15px 10px 10px 10px;
+      }
+      #codeSection {
+        flex-direction: column;
+        gap: 15px;
+      }
+      #editorContainer {
+        flex: none;
+        min-width: 100%;
+        max-height: 350px;
+        min-height: 300px;
+        border-radius: 5px;
+      }
+      #ioSide {
+        flex: none;
+        min-width: 100%;
+        max-height: none;
+      }
+      #runBtn {
+        width: 100%;
+        font-size: 16px;
+        padding: 14px 0;
+        min-width: unset;
+      }
+      #typingContainer {
+        font-size: 16px;
+        height: 35px;
+        padding-left: 10px;
+      }
+      #uploadedDate {
+        text-align: center;
+      }
+      #descriptionBox {
+        max-height: 300px;
+        min-height: 150px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #sidebar {
+        max-height: 200px;
+        padding: 8px 8px 8px 8px;
+      }
+      #sidebar h2 {
+        font-size: 1rem;
+      }
+      #fileList li {
+        font-size: 0.8rem;
+        padding: 6px 8px;
+      }
+      textarea, .readonly-box {
+        font-size: 13px;
+        min-height: 70px;
+        max-height: 120px;
+      }
+      #runBtn {
+        font-size: 15px;
+        padding: 12px 0;
+      }
+      #typingContainer {
+        font-size: 14px;
+        height: 30px;
+        padding-left: 8px;
+      }
     }
   </style>
 </head>
 <body>
-
-  <header>
-    <h1>Farhan Wahid</h1>
-    <p>Personal Site for C Programming Practice</p>
-  </header>
-
-  <div class="container">
-    <h2>📘 C Algorithm Collection</h2>
-    <p>Here you will find C codes I practiced — covering sorting, searching, and more. Feel free to explore and run them.</p>
-
-    <div class="code-list">
-      <div class="code-card">
-        <a href="c-codes/bubble_sort.c" target="_blank">🔹 Bubble Sort</a>
+  <div id="container">
+    <div id="sidebar" role="navigation" aria-label="File list">
+      <h2>Farhans Practice Problems</h2>
+      <ul id="fileList" tabindex="0"><li>Loading folders...</li></ul>
+    </div>
+    <div id="main">
+      <div id="codeSection">
+        <div id="editorContainer" aria-label="Code editor container">
+          <div id="editor" style="width: 100%; height: 600px;"></div>
+        </div>
+        <div id="ioSide">
+          <div class="io-box">
+            <label for="input">📥 Input</label>
+            <textarea id="input" placeholder="Input will be loaded here or you can type" spellcheck="false" autocomplete="off"></textarea>
+          </div>
+          <div class="io-box">
+            <label for="output">📤 Output</label>
+            <textarea id="output" readonly placeholder="Program output will appear here" spellcheck="false" autocomplete="off"></textarea>
+          </div>
+          <div class="io-box">
+            <label>✅ Expected Output</label>
+            <div id="expectedOutput" class="readonly-box" tabindex="0" aria-live="polite">Not loaded</div>
+          </div>
+          <div class="io-box" style="flex-grow:1; display:flex; flex-direction:column;">
+            <label>📝 Description <span id="fileNameLabel"></span></label>
+            <div id="descriptionBox" class="readonly-box" tabindex="0" aria-live="polite" style="flex-grow:1; overflow-y: scroll;">No description available.</div>
+          </div>
+        </div>
       </div>
-      <div class="code-card">
-        <a href="c-codes/binary_search.c" target="_blank">🔹 Binary Search</a>
-      </div>
-      <div class="code-card">
-        <a href="c-codes/fibonacci.c" target="_blank">🔹 Fibonacci (Recursion)</a>
-      </div>
-      <!-- Add more codes here -->
+      <button id="runBtn" aria-label="Run code">Run Code</button>
+      <div id="statusMsg" role="status" aria-live="polite"></div>
+      <div id="uploadedDate" aria-label="Last uploaded date"></div>
     </div>
   </div>
+  <div id="typingContainer" aria-live="polite" aria-atomic="true">
+    <div id="typingText"></div>
+  </div>
 
+  <script>
+    // Monaco loader config
+    require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.42.0/min/vs' }});
+
+    let editor;
+    require(["vs/editor/editor.main"], function () {
+      editor = monaco.editor.create(document.getElementById('editor'), {
+        value: '',
+        language: 'c',
+        theme: 'vs-dark',
+        automaticLayout: true,
+        fontSize: 14,
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+      });
+    });
+
+    // Your repo and API config
+    const repoOwner = "wahidfarhan";
+    const repoName = "Lazy_Farhan";
+    const folderPathRoot = "";
+
+    const rapidApiHost = "judge0-ce.p.rapidapi.com";
+    const rapidApiKey = "2ffb7c9968msh2aaee0147c376edp10350djsne858c3d03a02";
+
+    const fileListEl = document.getElementById("fileList");
+    const inputEl = document.getElementById("input");
+    const outputEl = document.getElementById("output");
+    const runBtn = document.getElementById("runBtn");
+    const statusMsg = document.getElementById("statusMsg");
+    const descriptionEl = document.getElementById("descriptionBox");
+    const expectedOutputEl = document.getElementById("expectedOutput");
+    const fileNameLabel = document.getElementById("fileNameLabel");
+    const uploadedDateEl = document.getElementById("uploadedDate");
+
+    let currentCode = "";
+    let currentPath = "";
+    let folderStack = [];
+
+    async function fetchFolderContent(path) {
+      try {
+        const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${path}`;
+        const res = await fetch(apiUrl);
+        if (!res.ok) throw new Error("Failed to fetch folder contents");
+        const data = await res.json();
+        return data;
+      } catch (err) {
+        fileListEl.innerHTML = `<li style="color:red;">Error loading folder contents</li>`;
+        console.error(err);
+        return null;
+      }
+    }
+
+    async function showFolder(path) {
+      fileListEl.innerHTML = "<li>Loading...</li>";
+      const data = await fetchFolderContent(path);
+      if (!data) return;
+
+      const folders = data.filter(item => item.type === "dir");
+      const cFiles = data.filter(item => item.type === "file" && item.name.endsWith(".c"));
+
+      fileListEl.innerHTML = "";
+
+      if (path !== folderPathRoot) {
+        const backLi = document.createElement("li");
+        backLi.textContent = "⬅️ Back";
+        backLi.classList.add("back-button");
+        backLi.addEventListener("click", () => {
+          if (folderStack.length > 0) {
+            currentPath = folderStack.pop();
+            showFolder(currentPath);
+            clearCodeDisplay();
+          }
+        });
+        fileListEl.appendChild(backLi);
+      }
+
+      if (folders.length === 0 && cFiles.length === 0) {
+        fileListEl.innerHTML += "<li>No folders or C files found.</li>";
+        return;
+      }
+
+      folders.forEach(folder => {
+        const li = document.createElement("li");
+        li.textContent = "📁 " + folder.name;
+        li.style.fontWeight = "bold";
+        li.style.cursor = "pointer";
+        li.addEventListener("click", () => {
+          folderStack.push(currentPath);
+          currentPath = folder.path;
+          showFolder(currentPath);
+          clearCodeDisplay();
+        });
+        fileListEl.appendChild(li);
+      });
+
+      cFiles.forEach(file => {
+        const li = document.createElement("li");
+        li.textContent = file.name;
+        li.style.cursor = "pointer";
+        li.addEventListener("click", () => {
+          loadCodeFile(file);
+        });
+        fileListEl.appendChild(li);
+      });
+    }
+
+    function clearCodeDisplay() {
+      currentCode = "";
+      if (editor) editor.setValue('');
+      inputEl.value = "";
+      outputEl.value = "";
+      expectedOutputEl.textContent = "Not loaded";
+      descriptionEl.textContent = "No description available.";
+      fileNameLabel.textContent = "";
+      uploadedDateEl.textContent = "";
+      statusMsg.textContent = "";
+    }
+
+    async function getFileLastCommitDate(filePath) {
+      try {
+        const commitsApiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/commits?path=${filePath}&page=1&per_page=1`;
+        const res = await fetch(commitsApiUrl);
+        if (!res.ok) throw new Error("Failed to fetch commits");
+        const commits = await res.json();
+        if (commits.length > 0 && commits[0].commit && commits[0].commit.author) {
+          return commits[0].commit.author.date;
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    }
+
+    async function parseInputFile(text) {
+      const lines = text.split(/\r?\n/);
+      let inputLines = [];
+      let descriptionLines = [];
+      let outputLines = [];
+
+      let section = "input";
+
+      for (let line of lines) {
+        const lower = line.trim().toLowerCase();
+        if (lower === "description") {
+          section = "description";
+          continue;
+        }
+        if (lower === "output") {
+          section = "output";
+          continue;
+        }
+        if (section === "input") inputLines.push(line);
+        else if (section === "description") descriptionLines.push(line);
+        else if (section === "output") outputLines.push(line);
+      }
+
+      return {
+        input: inputLines.join("\n"),
+        description: descriptionLines.join("\n"),
+        output: outputLines.join("\n"),
+      };
+    }
+
+    async function loadCodeFile(file) {
+      clearCodeDisplay();
+
+      try {
+        const res = await fetch(file.download_url);
+        if (!res.ok) throw new Error("Failed to fetch code");
+        const codeText = await res.text();
+
+        currentCode = codeText;
+        if (editor) editor.setValue(currentCode);
+      } catch (err) {
+        statusMsg.textContent = "Error loading code file.";
+        console.error(err);
+        return;
+      }
+
+      fileNameLabel.textContent = `(${file.name})`;
+
+      const commitDate = await getFileLastCommitDate(file.path);
+      if (commitDate) {
+        const dateObj = new Date(commitDate);
+        const formattedDate = dateObj.getFullYear() + "-" +
+                              String(dateObj.getMonth() + 1).padStart(2, "0") + "-" +
+                              String(dateObj.getDate()).padStart(2, "0") + " " +
+                              String(dateObj.getHours()).padStart(2, "0") + ":" +
+                              String(dateObj.getMinutes()).padStart(2, "0");
+        uploadedDateEl.textContent = `uploaded in ${formattedDate}`;
+      } else {
+        uploadedDateEl.textContent = "";
+      }
+
+      // Try to load input file with same basename + ".in"
+      const baseName = file.name.replace(/\.c$/, "");
+      const inputUrl = file.download_url.replace(/\/[^\/]+$/, `/${baseName}.in`);
+
+      try {
+        const inputRes = await fetch(inputUrl);
+        if (inputRes.ok) {
+          const inputText = await inputRes.text();
+          const parsed = await parseInputFile(inputText);
+          inputEl.value = parsed.input;
+          expectedOutputEl.textContent = parsed.output || "Not loaded";
+          descriptionEl.textContent = parsed.description || "No description available.";
+        } else {
+          inputEl.value = "";
+          expectedOutputEl.textContent = "Not loaded";
+          descriptionEl.textContent = "No description available.";
+        }
+      } catch {
+        inputEl.value = "";
+        expectedOutputEl.textContent = "Not loaded";
+        descriptionEl.textContent = "No description available.";
+      }
+    }
+
+    // Judge0 API integration
+    async function runCode() {
+      if (!editor) return;
+      const sourceCode = editor.getValue();
+      const input = inputEl.value;
+
+      statusMsg.textContent = "Running code...";
+      outputEl.value = "";
+
+      const postData = {
+        language_id: 50, // C (gcc 9.2.0) in Judge0
+        source_code: sourceCode,
+        stdin: input,
+      };
+
+      try {
+        const response = await fetch("https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-RapidAPI-Key": rapidApiKey,
+            "X-RapidAPI-Host": rapidApiHost,
+          },
+          body: JSON.stringify(postData),
+        });
+
+        if (!response.ok) throw new Error("Failed to run code");
+
+        const result = await response.json();
+
+        if (result.stdout) {
+          outputEl.value = result.stdout;
+          statusMsg.textContent = "Execution finished.";
+        } else if (result.compile_output) {
+          outputEl.value = result.compile_output;
+          statusMsg.textContent = "Compilation error.";
+        } else if (result.stderr) {
+          outputEl.value = result.stderr;
+          statusMsg.textContent = "Runtime error.";
+        } else {
+          outputEl.value = "";
+          statusMsg.textContent = "Unknown error.";
+        }
+      } catch (err) {
+        statusMsg.textContent = "Error running code.";
+        console.error(err);
+      }
+    }
+
+    runBtn.addEventListener("click", runCode);
+
+    // Init: show root folder files
+    currentPath = folderPathRoot;
+    showFolder(currentPath);
+
+    // Typing animation (optional)
+    const typingTextEl = document.getElementById("typingText");
+    const typingPhrases = [
+      "Welcome to Farhan's C Code Practice!",
+      "Select a file from left to load code.",
+      "Edit code and run it with Judge0 API.",
+      "Responsive & Modern Monaco Editor integrated.",
+      "Enjoy coding!"
+    ];
+    let typingIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+
+    function type() {
+      const current = typingPhrases[typingIndex];
+      if (!isDeleting) {
+        typingTextEl.textContent = current.slice(0, charIndex + 1);
+        charIndex++;
+        if (charIndex === current.length) {
+          isDeleting = true;
+          setTimeout(type, 2000);
+          return;
+        }
+      } else {
+        typingTextEl.textContent = current.slice(0, charIndex - 1);
+        charIndex--;
+        if (charIndex === 0) {
+          isDeleting = false;
+          typingIndex = (typingIndex + 1) % typingPhrases.length;
+        }
+      }
+      setTimeout(type, isDeleting ? 80 : 120);
+    }
+    type();
+
+    // Optional: Zoom editor font size with Ctrl+wheel
+    window.addEventListener('wheel', e => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        if (!editor) return;
+        let currentFont = editor.getOption(monaco.editor.EditorOption.fontSize);
+        if (e.deltaY < 0) {
+          currentFont = Math.min(currentFont + 1, 30);
+        } else {
+          currentFont = Math.max(currentFont - 1, 8);
+        }
+        editor.updateOptions({ fontSize: currentFont });
+      }
+    }, { passive: false });
+  </script>
 </body>
 </html>
